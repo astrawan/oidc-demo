@@ -1,0 +1,69 @@
+services:
+  idm:
+    image: kanidm/server:1.10.5
+    volumes:
+      - idm_data:/data
+      - ./container/kanidm/server.toml:/etc/kanidm.toml:ro
+      - ./container/kanidm/_.demo.local.cer:/etc/kanidm-chain.pem:ro
+      - ./container/kanidm/_.demo.local.key:/etc/kanidm-key.pem:ro
+      - ./container/kanidm/override.css:/hpkg/override.css
+    environment:
+      KANIDM_CONFIG: /etc/kanidm.toml
+      KANIDM_DOMAIN: idm.demo.local
+      KANIDM_LOG_LEVEL: trace
+      KANIDM_ORIGIN: https://idm.demo.local:443
+    entrypoint: "/sbin/kanidmd"
+    command: "server"
+    networks:
+      default:
+        aliases:
+          - idm.demo.local
+
+  idm-tools:
+    image: kanidm/tools:1.10.5
+    profiles:
+      - tools
+    volumes:
+      - idm_tools_data:/root/.cache
+      - ./container/kanidm/client.toml:/etc/kanidm/config:ro
+      - ./container/kanidm/ca_demo.local.cer:/usr/local/share/ca-certificates/ca_demo.local.crt:ro
+      - ./container/kanidm/Shared:/root/Shared:rw
+    environment:
+      KANIDM_URL: https://idm.demo.local
+      KANIDM_CA_PATH: /usr/local/share/ca-certificates/ca_demo.local.crt
+      KANIDM_ACCEPT_INVALID_CERTS: true
+    entrypoint: "/sbin/kanidm"
+    networks:
+      default:
+
+  app:
+    image: registry.gitlab.com/guenoledc-perso/idp-oidc-tester:latest
+    environment:
+      EXTERNAL_OWN_URL: http://app.demo.local
+      NODE_ENV: development
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
+      IDENTITY_PROVIDER_BASE_URL: https://idm.demo.local
+    networks:
+      default:
+        aliases:
+          - app.demo.local
+
+  proxy:
+    image: caddy:latest
+    restart: unless-stopped
+    volumes:
+      - ./container/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./container/kanidm/_.demo.local.cer:/opt/_.demo.local.crt:ro
+      - ./container/kanidm/_.demo.local.key:/opt/_.demo.local.key:ro
+      - caddy_data:/data
+    ports:
+      - 80:80
+      - 443:443
+
+networks:
+  default:
+
+volumes:
+  idm_data:
+  idm_tools_data:
+  caddy_data: null

@@ -1,0 +1,13 @@
+idm.demo.local:443 {
+  tls /opt/_.demo.local.crt /opt/_.demo.local.key
+  reverse_proxy https://idm.demo.local {
+    transport http {
+      tls
+      tls_insecure_skip_verify
+    }
+  }
+}
+
+app.demo.local:80 {
+  reverse_proxy /* http://app.demo.local:80
+}

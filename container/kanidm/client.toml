@@ -1,0 +1,2 @@
+uri = "https://idm.demo.local"
+ca_path = "/usr/local/share/ca-certificates/idm.demo.local.crt"
